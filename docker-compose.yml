@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: finlit_mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: finlit_admin
+      MONGO_INITDB_ROOT_PASSWORD: finlit_secret_2026
+      MONGO_INITDB_DATABASE: financial_literacy
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: finlit_redis
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass redis_secret_2026
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+  redis_data:
