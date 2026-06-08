@@ -78,7 +78,7 @@
           <span class="kpi-health-badge" :class="healthClass">{{ healthLabel }}</span>
         </div>
         <div class="kpi-value">{{ healthScore }}<span class="kpi-unit"> / 100</span></div>
-        <div class="kpi-label">Финансовое здоровье</div>
+        <div class="kpi-label">{{ $t('dashboard.financial_health') }}</div>
         <div class="health-mini-bar">
           <div class="health-mini-fill" :class="healthClass" :style="{ width: healthScore + '%' }"></div>
         </div>
@@ -99,7 +99,7 @@
       <!-- Category Breakdown -->
       <div class="dash-card analytics-main">
         <div class="dash-card-header">
-          <h3><i class="pi pi-chart-pie"></i> Распределение расходов</h3>
+          <h3><i class="pi pi-chart-pie"></i> {{ $t('dashboard.expense_distribution') }}</h3>
           <span class="card-total-tag">{{ formatMoney(activeReport.total_expense) }}</span>
         </div>
 
@@ -108,7 +108,7 @@
             <Doughnut :data="chartData" :options="chartOptions" />
             <div class="donut-center">
               <div class="donut-center-val">{{ formatMoney(activeReport.total_expense) }}</div>
-              <div class="donut-center-lbl">расходы</div>
+              <div class="donut-center-lbl">{{ $t('dashboard.expenses') }}</div>
             </div>
           </div>
 
@@ -117,7 +117,7 @@
               <div class="cat-row-top">
                 <div class="cat-name-group">
                   <span class="cat-dot" :style="{ background: COLORS[i % COLORS.length] }"></span>
-                  <span class="cat-name">{{ cat.name }}</span>
+                  <span class="cat-name">{{ resolveCategory(cat.name, $t) }}</span>
                 </div>
                 <div class="cat-nums">
                   <span class="cat-pct">{{ cat.pct }}%</span>
@@ -136,7 +136,7 @@
 
         <div class="card-empty" v-else>
           <i class="pi pi-chart-bar" style="font-size:2.5rem; opacity:0.2"></i>
-          <p>Добавьте категории расходов в отчёт</p>
+          <p>{{ $t('dashboard.add_categories') }}</p>
         </div>
       </div>
 
@@ -146,7 +146,7 @@
         <!-- Savings Rate Gauge -->
         <div class="dash-card savings-card">
           <div class="dash-card-header">
-            <h3><i class="pi pi-percentage"></i> Норма сбережений</h3>
+            <h3><i class="pi pi-percentage"></i> {{ $t('dashboard.savings_rate') }}</h3>
           </div>
           <div class="gauge-layout">
             <div class="gauge-wrap">
@@ -171,18 +171,18 @@
                 <span class="gauge-pct" :class="savingsRate >= 20 ? 'gauge-good' : savingsRate > 0 ? 'gauge-ok' : 'gauge-bad'">
                   {{ savingsRate }}%
                 </span>
-                <span class="gauge-lbl">сбережений</span>
+                <span class="gauge-lbl">{{ $t('dashboard.savings') }}</span>
               </div>
             </div>
             <div class="gauge-legend">
               <div class="gauge-leg-item">
                 <span class="gauge-leg-dot leg-expense"></span>
-                <span class="gauge-leg-label">Расходы</span>
+                <span class="gauge-leg-label">{{ $t('dashboard.expenses') }}</span>
                 <span class="gauge-leg-val">{{ expenseRate }}%</span>
               </div>
               <div class="gauge-leg-item">
                 <span class="gauge-leg-dot" :class="savingsRate >= 20 ? 'leg-savings-good' : 'leg-savings'"></span>
-                <span class="gauge-leg-label">Сбережения</span>
+                <span class="gauge-leg-label">{{ $t('dashboard.savings') }}</span>
                 <span class="gauge-leg-val" :class="savingsRate >= 20 ? 'gauge-good' : savingsRate > 0 ? 'gauge-ok' : 'gauge-bad'">
                   {{ savingsRate }}%
                 </span>
@@ -194,7 +194,7 @@
         <!-- Smart Insights -->
         <div class="dash-card insights-card" v-if="insights.length">
           <div class="dash-card-header">
-            <h3><i class="pi pi-lightbulb"></i> Аналитика</h3>
+            <h3><i class="pi pi-lightbulb"></i> {{ $t('dashboard.analytics') }}</h3>
           </div>
           <div class="insights-list">
             <div
@@ -220,7 +220,7 @@
         <div class="dash-card-header">
           <h3><i class="pi pi-flag"></i> {{ $t('dashboard.active_goals') }}</h3>
           <router-link to="/goals" class="card-link-btn">
-            Все <i class="pi pi-arrow-right"></i>
+            {{ $t('dashboard.all') }} <i class="pi pi-arrow-right"></i>
           </router-link>
         </div>
         <div v-if="goalsStore.activeGoals.length === 0" class="card-empty">
@@ -254,7 +254,7 @@
         <div class="dash-card-header">
           <h3><i class="pi pi-history"></i> {{ $t('dashboard.recent_reports') }}</h3>
           <router-link to="/reports" class="card-link-btn">
-            Все <i class="pi pi-arrow-right"></i>
+            {{ $t('dashboard.all') }} <i class="pi pi-arrow-right"></i>
           </router-link>
         </div>
         <div v-if="reportsStore.reports.length === 0" class="card-empty">
@@ -273,7 +273,7 @@
               <div class="r-indicator" :class="r.surplus >= 0 ? 'r-pos' : 'r-neg'"></div>
               <div>
                 <div class="r-period">{{ r.period }}</div>
-                <div class="r-sub">{{ formatMoney(r.total_income) }} доходов</div>
+                <div class="r-sub">{{ formatMoney(r.total_income) }} {{ $t('dashboard.income') }}</div>
               </div>
             </div>
             <div class="r-right">
@@ -292,11 +292,15 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 import { Doughnut } from 'vue-chartjs'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
 import { useReportsStore } from '../stores/reports'
 import { useGoalsStore } from '../stores/goals'
 import { useAuthStore } from '../stores/auth'
+import { resolveCategory } from '../utils/categoryUtils'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
@@ -330,9 +334,9 @@ const firstName = computed(() => {
 
 const greeting = computed(() => {
   const h = new Date().getHours()
-  if (h < 12) return 'Доброе утро'
-  if (h < 17) return 'Добрый день'
-  return 'Добрый вечер'
+  if (h < 12) return t('dashboard.greeting_morning')
+  if (h < 17) return t('dashboard.greeting_afternoon')
+  return t('dashboard.greeting_evening')
 })
 
 const currencySymbol = computed(() => {
@@ -415,7 +419,7 @@ const chartCategories = computed(() => {
     pct: Math.round((c.amount / total) * 100),
   }))
   if (unaccounted > 0) {
-    result.push({ name: 'Прочие', amount: unaccounted, pct: Math.round((unaccounted / total) * 100) })
+    result.push({ name: t('reports.categories_preset.unaccounted'), amount: unaccounted, pct: Math.round((unaccounted / total) * 100) })
   }
   return result.sort((a, b) => b.amount - a.amount).slice(0, 8)
 })
@@ -423,7 +427,7 @@ const chartCategories = computed(() => {
 const chartData = computed(() => {
   if (!chartCategories.value.length) return { labels: [], datasets: [] }
   return {
-    labels: chartCategories.value.map(c => c.name),
+    labels: chartCategories.value.map(c => resolveCategory(c.name, t)),
     datasets: [{
       data: chartCategories.value.map(c => c.amount),
       backgroundColor: COLORS.slice(0, chartCategories.value.length),
@@ -452,23 +456,23 @@ const insights = computed(() => {
   const result = []
 
   if (activeReport.value.surplus < 0) {
-    result.push({ type: 'bad', icon: 'pi pi-exclamation-triangle', text: 'Расходы превышают доходы. Пересмотрите бюджет.' })
+    result.push({ type: 'bad', icon: 'pi pi-exclamation-triangle', text: t('dashboard.insight_overspend') })
   } else if (savingsRate.value >= 20) {
-    result.push({ type: 'good', icon: 'pi pi-check-circle', text: `Отличная норма сбережений — ${savingsRate.value}% дохода откладывается.` })
+    result.push({ type: 'good', icon: 'pi pi-check-circle', text: t('dashboard.insight_savings_good', { rate: savingsRate.value }) })
   } else {
-    result.push({ type: 'warn', icon: 'pi pi-info-circle', text: `Норма сбережений ${savingsRate.value}%. Рекомендуется 20%+.` })
+    result.push({ type: 'warn', icon: 'pi pi-info-circle', text: t('dashboard.insight_savings_low', { rate: savingsRate.value }) })
   }
 
   const topCat = chartCategories.value[0]
   if (topCat) {
-    result.push({ type: 'info', icon: 'pi pi-tag', text: `Наибольшие расходы: «${topCat.name}» — ${topCat.pct}% от трат.` })
+    result.push({ type: 'info', icon: 'pi pi-tag', text: t('dashboard.insight_top_category', { name: topCat.name, pct: topCat.pct }) })
   }
 
   const unaccPct = activeReport.value.total_expense > 0
     ? Math.round((activeReport.value.unaccounted_expense / activeReport.value.total_expense) * 100)
     : 0
   if (unaccPct > 15) {
-    result.push({ type: 'warn', icon: 'pi pi-question-circle', text: `${unaccPct}% расходов не распределены по категориям.` })
+    result.push({ type: 'warn', icon: 'pi pi-question-circle', text: t('dashboard.insight_unaccounted', { pct: unaccPct }) })
   }
 
   return result.slice(0, 3)
@@ -1152,11 +1156,17 @@ function progressFill(pct) {
   .dash-header {
     flex-direction: column;
     gap: 0.75rem;
+    align-items: stretch;
   }
 
   .dash-header-actions {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .btn-add {
+    flex: 1;
+    justify-content: center;
   }
 
   .analytics-side {

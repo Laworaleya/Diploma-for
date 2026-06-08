@@ -19,6 +19,7 @@ STANDARD_EXPENSE_CATEGORIES = [
     "Развлечения",
     "Образование",
     "Погашение кредита",
+    "Переводы людям",
     "Прочие расходы",
 ]
 
@@ -70,57 +71,70 @@ def sanitize_required_categories(categories: List[dict]) -> List[dict]:
     return sanitized
 
 
-async def classify_merchants_with_ai(transactions: List[dict]) -> Dict[str, str]:
-    """Return {merchant: category_ru} for unique 'Покупка' merchants.
+def _make_tx_key(txn: dict) -> str:
+    """Build 'Операция | Детали' label sent to AI for classification."""
+    operation = (txn.get("operation") or "").strip()
+    details = (txn.get("details") or "").strip()
+    if operation and details:
+        return f"{operation} | {details}"
+    return details or operation
 
-    Checks Redis cache first (key merchant_category:{name}, TTL 30 days).
-    Sends uncached merchants to OpenAI gpt-4o-mini in a single batch request.
-    Skips classification silently if API key is missing or Redis/OpenAI fails.
+
+async def classify_merchants_with_ai(transactions: List[dict]) -> Dict[str, str]:
+    """Return {tx_key: category_ru} for unique expense transactions.
+
+    tx_key is 'Операция | Детали' (e.g. 'Покупка | MAGNUM').
+    Checks Redis cache first; sends uncached entries to OpenAI in one batch.
+    Skips classification silently if API key is missing or any call fails.
     """
     if not settings.OPENAI_API_KEY:
         return {}
 
-    # Primary: transactions explicitly tagged as "Покупка"
-    merchants = list({
-        t["details"]
-        for t in transactions
-        if (t.get("operation") or "").lower() == "покупка" and t.get("details")
-    })
-    # Fallback: if PDF extraction put operation on a separate line, operation is None
-    # In that case classify all negative-amount transactions that have a details field
-    if not merchants:
-        merchants = list({
-            t["details"]
-            for t in transactions
-            if not t.get("operation") and t.get("details") and float(t.get("amount", 0) or 0) < 0
-        })
-    if not merchants:
+    has_typed_purchases = any(
+        (t.get("operation") or "").lower() == "покупка" for t in transactions
+    )
+
+    candidates: List[dict] = []
+    for t in transactions:
+        amount = float(t.get("amount", 0) or 0)
+        if amount >= 0:
+            continue
+        operation = (t.get("operation") or "").lower()
+        # If operations are typed, include all expense types except deposits/returns
+        if has_typed_purchases and operation in ("пополнение", "поступление", "возврат"):
+            continue
+        if not has_typed_purchases and not t.get("details"):
+            continue
+        candidates.append(t)
+
+    unique_keys = list({_make_tx_key(t) for t in candidates if _make_tx_key(t)})
+    if not unique_keys:
         return {}
 
     result: Dict[str, str] = {}
     uncached: List[str] = []
 
     redis = get_redis()
-    for merchant in merchants:
+    for key in unique_keys:
         cached_category = None
         if redis:
             try:
-                cached_category = await redis.get(f"merchant_category:{merchant}")
+                cached_category = await redis.get(f"merchant_category:{key}")
             except Exception:
                 pass
         if cached_category:
-            result[merchant] = cached_category
+            result[key] = cached_category
         else:
-            uncached.append(merchant)
+            uncached.append(key)
 
     if uncached:
         ai_result = await _batch_classify_openai(uncached)
-        for merchant, category in ai_result.items():
-            result[merchant] = category
+        for key, category in ai_result.items():
+            result[key] = category
             if redis:
                 try:
                     await redis.set(
-                        f"merchant_category:{merchant}",
+                        f"merchant_category:{key}",
                         category,
                         ex=_MERCHANT_CACHE_TTL,
                     )
@@ -134,49 +148,64 @@ def build_categories_from_transactions(
     transactions: List[dict],
     merchant_categories: Dict[str, str],
 ) -> List[Dict[str, float | str]]:
-    """Aggregate 'Покупка' expense amounts by AI-classified category."""
-    valid_categories = set(STANDARD_EXPENSE_CATEGORIES)
-    totals: Dict[str, float] = {name: 0.0 for name in STANDARD_EXPENSE_CATEGORIES}
+    """Aggregate expense amounts by AI-classified category.
+
+    Allows any category name returned by AI — not limited to STANDARD_EXPENSE_CATEGORIES.
+    Categories with zero amount are omitted from the result.
+    """
+    totals: Dict[str, float] = {}
 
     has_typed_purchases = any(
         (t.get("operation") or "").lower() == "покупка" for t in transactions
     )
+
     for txn in transactions:
-        operation = (txn.get("operation") or "").lower()
         amount = float(txn.get("amount", 0) or 0)
         if amount >= 0:
             continue
-        # If operations are typed, only aggregate "Покупка"; otherwise aggregate all expenses with details
-        if has_typed_purchases and operation != "покупка":
+        operation = (txn.get("operation") or "").lower()
+        if has_typed_purchases and operation in ("пополнение", "поступление", "возврат"):
             continue
         if not has_typed_purchases and not txn.get("details"):
             continue
-        merchant = txn.get("details") or ""
-        category = merchant_categories.get(merchant, "Прочие расходы")
-        if category not in valid_categories:
-            category = "Прочие расходы"
-        totals[category] += abs(amount)
+
+        tx_key = _make_tx_key(txn)
+        category = merchant_categories.get(tx_key, "Прочие расходы")
+        totals[category] = totals.get(category, 0.0) + abs(amount)
 
     return [
-        {"name": name, "amount": round(totals[name], 2)}
-        for name in STANDARD_EXPENSE_CATEGORIES
+        {"name": name, "amount": round(amount, 2)}
+        for name, amount in sorted(totals.items(), key=lambda x: -x[1])
+        if amount > 0
     ]
 
 
-async def _batch_classify_openai(merchants: List[str]) -> Dict[str, str]:
+async def _batch_classify_openai(tx_keys: List[str]) -> Dict[str, str]:
     categories_list = "\n".join(f"- {cat}" for cat in STANDARD_EXPENSE_CATEGORIES)
-    prompt = (
-        "Определи категорию трат для каждого мерчанта из списка. "
-        "Используй ТОЛЬКО категории из списка ниже. "
-        "Если не можешь определить — используй \"Прочие расходы\". "
-        "Ответь ТОЛЬКО валидным JSON объектом формата {\"Merchant\": \"Категория\"}.\n\n"
-        f"Допустимые категории:\n{categories_list}\n\n"
-        "Мерчанты:\n" + "\n".join(merchants)
-    )
+    items_text = "\n".join(tx_keys)
+
+    prompt = f"""Ты классификатор расходов по банковской выписке Kaspi.
+
+Определи категорию для каждой операции. Используй ТОЛЬКО категории из списка:
+{categories_list}
+
+Правила:
+1. Не ставь "Прочие расходы", если можно логично определить категорию.
+2. "Прочие расходы" — только если операция реально непонятна.
+3. Если тип операции "Перевод" — ставь "Переводы людям".
+4. Если в деталях имя человека или фамилия с инициалом (например "IVANOV I.", "АХМЕТОВ А.") — это "Переводы людям".
+5. Если есть "ИП" и название похоже на магазин/кафе/точку продаж — выбери наиболее вероятную категорию.
+
+Формат входных данных: "ТипОперации | Детали".
+
+Ответь ТОЛЬКО валидным JSON объектом формата {{"ТипОперации | Детали": "Категория"}}.
+
+Операции:
+{items_text}"""
 
     body = json.dumps(
         {
-            "model": "gpt-4o-mini",
+            "model": "gpt-5.4-mini",
             "messages": [{"role": "user", "content": prompt}],
             "response_format": {"type": "json_object"},
             "temperature": 0,

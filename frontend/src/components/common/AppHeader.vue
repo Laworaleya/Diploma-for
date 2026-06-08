@@ -11,8 +11,9 @@
         <router-link to="/reports"            class="nav-link" active-class="active">{{ $t('nav.reports') }}</router-link>
         <router-link to="/goals"              class="nav-link" active-class="active">{{ $t('nav.goals') }}</router-link>
         <router-link to="/ai"                 class="nav-link" active-class="active">{{ $t('nav.ai') }}</router-link>
+        <router-link to="/tracker"             class="nav-link" active-class="active">{{ $t('nav.tracker') }}</router-link>
         <router-link to="/recurring-payments" class="nav-link" active-class="active">{{ $t('nav.recurring_payments') }}</router-link>
-        <router-link v-if="authStore.isAdmin" to="/admin" class="nav-link nav-link-admin" active-class="active">Админ</router-link>
+        <router-link v-if="authStore.isAdmin" to="/admin" class="nav-link nav-link-admin" active-class="active">{{ $t('nav.admin') }}</router-link>
       </nav>
 
       <div class="header-actions">
@@ -221,13 +222,17 @@ function handleLogout() {
 }
 
 @media (max-width: 768px) {
-  .nav-links { display: none; }
-  .user-name  { display: none; }
+  .nav-links   { display: none; }
+  .user-name   { display: none; }
   .btn-logout span { display: none; }
+  .btn-logout  { padding: 0.4rem 0.6rem; }
 
   .header-inner {
-    height: 56px;
-    gap: 0.75rem;
+    height: 52px;
+    gap: 0.5rem;
+    padding: 0 1rem;
   }
+
+  .logo-text { font-size: 1.05rem; }
 }
 </style>

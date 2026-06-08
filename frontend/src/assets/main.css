@@ -67,6 +67,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -77,6 +78,7 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 /* ═══════════════ Animated Background ═══════════════ */
@@ -145,6 +147,9 @@ body::before {
   transition: all var(--transition-base);
   font-size: 0.95rem;
   letter-spacing: 0.01em;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
 }
 
 .btn-primary-gradient:hover {
@@ -454,6 +459,38 @@ body::before {
 
   .premium-card {
     padding: 1rem;
+  }
+
+  /* Bottom nav clearance — every page gets space above fixed nav */
+  .page-container {
+    padding-bottom: 5rem;
+  }
+
+  .page-title {
+    font-size: 1.35rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.875rem;
+    margin-bottom: 1.25rem;
+  }
+
+  /* Touch-friendly interactive elements */
+  button, a, [role="button"] {
+    touch-action: manipulation;
+  }
+
+  .btn-primary-gradient,
+  .btn-glass,
+  .btn-success-gradient,
+  .btn-danger-gradient {
+    min-height: 44px;
+  }
+
+  .form-control-dark,
+  .form-select-dark {
+    min-height: 44px;
+    font-size: 16px; /* prevent iOS zoom on focus */
   }
 }
 

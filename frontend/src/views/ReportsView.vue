@@ -7,7 +7,7 @@
       </div>
       <div class="header-actions">
         <button class="btn-glass" type="button" @click="pdfInput?.click()">
-          Импорт Kaspi PDF
+          {{ $t('reports.kaspi_import') }}
         </button>
         <button class="btn-primary-gradient" @click="openForm()" id="new-report-btn">
           + {{ $t('reports.new_report') }}
@@ -27,7 +27,7 @@
     <section class="import-panel" v-if="importedAnalysis || importError || reportsStore.loading">
       <div class="import-status" v-if="reportsStore.loading && !importedAnalysis">
         <span class="spinner"></span>
-        <span>Анализирую PDF Kaspi Bank...</span>
+        <span>{{ $t('reports.analyzing_pdf') }}</span>
       </div>
 
       <div v-if="importError" class="alert-box danger">{{ importError }}</div>
@@ -35,31 +35,31 @@
       <div v-if="importedAnalysis" class="analysis-layout">
         <div class="analysis-head">
           <div>
-            <h2>Автоматический анализ Kaspi Gold</h2>
-            <p>Найдено операций: {{ importedAnalysis.transactions.length }}</p>
+            <h2>{{ $t('reports.kaspi_analysis_title') }}</h2>
+            <p>{{ $t('reports.operations_found') }}: {{ importedAnalysis.transactions.length }}</p>
           </div>
           <button class="btn-success-gradient" type="button" @click="saveImportedReport">
-            Сохранить отчет
+            {{ $t('reports.save_report') }}
           </button>
         </div>
 
         <div class="summary-grid">
           <div class="summary-item">
-            <span>Всего доступно</span>
+            <span>{{ $t('reports.available_total') }}</span>
             <strong class="income">{{ formatMoney(importedAnalysis.summary.totalIncome) }}</strong>
           </div>
           <div class="summary-item">
-            <span>Потрачено</span>
+            <span>{{ $t('reports.spent_total') }}</span>
             <strong class="expense">{{ formatMoney(importedAnalysis.summary.totalExpense) }}</strong>
           </div>
           <div class="summary-item">
-            <span>Осталось / профицит</span>
+            <span>{{ $t('reports.remaining_surplus') }}</span>
             <strong :class="importedAnalysis.summary.balanceLeft >= 0 ? 'income' : 'expense'">
               {{ formatMoney(importedAnalysis.summary.balanceLeft) }}
             </strong>
           </div>
           <div class="summary-item">
-            <span>После обязательных</span>
+            <span>{{ $t('reports.after_required') }}</span>
             <strong :class="moneyAfterRequired >= 0 ? 'income' : 'expense'">
               {{ formatMoney(moneyAfterRequired) }}
             </strong>
@@ -81,8 +81,8 @@
 
         <div class="chart-section" v-if="importedAnalysis.chartData.length">
           <div class="section-title-row">
-            <h3>Диаграмма трат по дням</h3>
-            <span>{{ importedAnalysis.chartData.length }} дней</span>
+            <h3>{{ $t('reports.chart_daily') }}</h3>
+            <span>{{ importedAnalysis.chartData.length }} {{ $t('reports.days_suffix') }}</span>
           </div>
           <div class="month-strip" v-if="chartMonths.length > 1">
             <span v-for="month in chartMonths" :key="month">{{ month }}</span>
@@ -95,7 +95,7 @@
         <div class="manual-grid">
           <section class="manual-section">
             <div class="section-title-row">
-              <h3>Категории расходов</h3>
+              <h3>{{ $t('reports.categories') }}</h3>
               <span>{{ formatMoney(categorizedImportTotal) }}</span>
             </div>
             <datalist id="expense-category-options">
@@ -106,7 +106,7 @@
                 v-model="category.name"
                 list="expense-category-options"
                 class="form-control-dark"
-                placeholder="Категория"
+                :placeholder="$t('reports.category_name')"
               />
               <input
                 v-model.number="category.amount"
@@ -114,18 +114,18 @@
                 min="0"
                 step="1"
                 class="form-control-dark amount-input"
-                placeholder="Сумма"
+                :placeholder="$t('reports.category_amount')"
               />
               <button type="button" class="btn-remove" @click="removeImportedCategory(index)">x</button>
             </div>
             <button type="button" class="btn-glass btn-sm" @click="addImportedCategory">
-              + Добавить категорию
+              + {{ $t('reports.add_category') }}
             </button>
           </section>
 
           <section class="manual-section">
             <div class="section-title-row">
-              <h3>Обязательные категории</h3>
+              <h3>{{ $t('reports.required_categories') }}</h3>
               <span>{{ formatMoney(requiredTotal) }}</span>
             </div>
             <datalist id="required-category-options">
@@ -140,7 +140,7 @@
                 v-model="category.name"
                 list="required-category-options"
                 class="form-control-dark"
-                placeholder="Название"
+                :placeholder="$t('reports.payment_name')"
               />
               <input
                 v-model.number="category.amount"
@@ -148,12 +148,12 @@
                 min="0"
                 step="1"
                 class="form-control-dark"
-                placeholder="Сумма"
+                :placeholder="$t('reports.category_amount')"
               />
               <input
                 v-model="category.duration"
                 class="form-control-dark"
-                placeholder="До какой даты (дд.мм.гг)"
+                :placeholder="$t('reports.payment_date_placeholder')"
               />
               <button type="button" class="btn-remove" @click="removeRequiredCategory(index)">x</button>
             </div>
@@ -227,7 +227,7 @@
 
           <div class="categories-section">
             <div class="section-header" @click="showRequiredCategories = !showRequiredCategories">
-              <h3>Обязательные категории</h3>
+              <h3>{{ $t('reports.required_categories') }}</h3>
               <span class="toggle-icon">{{ showRequiredCategories ? 'v' : '>' }}</span>
             </div>
 
@@ -237,7 +237,7 @@
                   <input
                     v-model="cat.name"
                     list="required-category-options"
-                    placeholder="Название"
+                    :placeholder="$t('reports.payment_name')"
                     class="form-control-dark"
                   />
                   <input
@@ -245,19 +245,19 @@
                     type="number"
                     min="0"
                     step="1"
-                    placeholder="Сумма"
+                    :placeholder="$t('reports.category_amount')"
                     class="form-control-dark"
                   />
                   <input
                     v-model="cat.duration"
-                    placeholder="До какой даты (дд.мм.гг)"
+                    :placeholder="$t('reports.payment_date_placeholder')"
                     class="form-control-dark"
                   />
                   <button type="button" class="btn-remove" @click="removeFormRequiredCategory(i)">x</button>
                 </div>
 
                 <button type="button" class="btn-glass btn-sm" @click="addFormRequiredCategory">
-                  + Добавить обязательный платеж
+                  + {{ $t('reports.add_required') }}
                 </button>
               </div>
             </transition>
@@ -271,7 +271,7 @@
               </span>
             </div>
             <div class="balance-row" v-if="formRequiredTotal > 0">
-              <span>Обязательные платежи</span>
+              <span>{{ $t('reports.required_payments') }}</span>
               <span class="balance-value warning">{{ formatMoney(formRequiredTotal) }}</span>
             </div>
             <div class="balance-row">
@@ -355,9 +355,9 @@
             ></div>
           </div>
           <div class="ratio-labels">
-            <span>{{ expenseRatio(report) }}% от дохода потрачено</span>
+            <span>{{ expenseRatio(report) }}% {{ $t('reports.spent_total').toLowerCase() }}</span>
             <span v-if="report.unaccounted_expense > 0" class="ratio-unaccounted">
-              ~{{ formatMoney(report.unaccounted_expense) }} без категорий
+              ~{{ formatMoney(report.unaccounted_expense) }} {{ $t('reports.no_categories') }}
             </span>
           </div>
         </div>
@@ -376,7 +376,7 @@
 
         <div class="report-ai-actions" v-if="sendingReportToAi === report.id">
           <span class="spinner"></span>
-          <span style="font-size:0.82rem;color:var(--text-muted)">Отправка в AI…</span>
+          <span style="font-size:0.82rem;color:var(--text-muted)">{{ $t('reports.sending_ai') }}</span>
         </div>
       </div>
     </div>
@@ -386,7 +386,10 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import Menu from 'primevue/menu'
+
+const { t } = useI18n()
 import { Line } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -423,12 +426,12 @@ const activeMenuReport = ref(null)
 
 const reportMenuItems = computed(() => [
   {
-    label: 'Редактировать',
+    label: t('reports.edit_report'),
     icon: 'pi pi-pencil',
     command: () => openForm(activeMenuReport.value),
   },
   {
-    label: 'AI-анализ',
+    label: t('reports.ai_analysis_btn'),
     icon: 'pi pi-sparkles',
     command: () => sendReportToAi(activeMenuReport.value),
   },
@@ -436,49 +439,50 @@ const reportMenuItems = computed(() => [
     separator: true,
   },
   {
-    label: 'Удалить',
+    label: t('common.delete'),
     icon: 'pi pi-trash',
     command: () => confirmDelete(activeMenuReport.value?.id),
   },
 ])
 const requiredDraft = ref([])
 
-const standardCategories = [
-  'Продукты',
-  'Кафе и рестораны',
-  'Транспорт',
-  'Такси',
-  'Коммунальные услуги',
-  'Связь и интернет',
-  'Одежда и обувь',
-  'Здоровье и аптека',
-  'Развлечения',
-  'Образование',
-  'Погашение кредита',
-  'Прочие расходы',
-]
+const standardCategories = computed(() => [
+  t('reports.categories_preset.food'),
+  t('reports.categories_preset.restaurants'),
+  t('reports.categories_preset.transport'),
+  t('reports.categories_preset.taxi'),
+  t('reports.categories_preset.utilities'),
+  t('reports.categories_preset.communication'),
+  t('reports.categories_preset.clothing_shoes'),
+  t('reports.categories_preset.health_pharmacy'),
+  t('reports.categories_preset.entertainment'),
+  t('reports.categories_preset.education'),
+  t('reports.categories_preset.loan'),
+  t('reports.categories_preset.transfers_people'),
+  t('reports.categories_preset.other_expenses'),
+])
 
-const requiredCategoryNames = [
-  'Кредит',
-  'Аренда',
-  'Коммунальные платежи',
-  'Подписки',
-  'Учеба',
-  'Связь',
-]
+const requiredCategoryNames = computed(() => [
+  t('reports.categories_preset.loan'),
+  t('reports.categories_preset.rent'),
+  t('reports.categories_preset.utilities'),
+  t('tracker.categories.subscriptions'),
+  t('reports.categories_preset.education'),
+  t('reports.categories_preset.communication'),
+])
 
 const defaultCategoryCount = 3
 
-const summaryFields = [
-  { key: 'startBalance', label: 'Доступно на начало периода' },
-  { key: 'topUps', label: 'Пополнения' },
-  { key: 'ownAccountIncome', label: 'Поступления со своих счетов' },
-  { key: 'transfers', label: 'Переводы' },
-  { key: 'ownAccountTransfers', label: 'Переводы на свои счета' },
-  { key: 'purchases', label: 'Покупки' },
-  { key: 'cashWithdrawals', label: 'Снятия' },
-  { key: 'other', label: 'Разное' },
-]
+const summaryFields = computed(() => [
+  { key: 'startBalance', label: t('reports.summary.startBalance') },
+  { key: 'topUps', label: t('reports.summary.topUps') },
+  { key: 'ownAccountIncome', label: t('reports.summary.ownAccountIncome') },
+  { key: 'transfers', label: t('reports.summary.transfers') },
+  { key: 'ownAccountTransfers', label: t('reports.summary.ownAccountTransfers') },
+  { key: 'purchases', label: t('reports.summary.purchases') },
+  { key: 'cashWithdrawals', label: t('reports.summary.cashWithdrawals') },
+  { key: 'other', label: t('reports.summary.other') },
+])
 
 const form = reactive({
   period: new Date().toISOString().slice(0, 7),
@@ -640,7 +644,7 @@ function openForm(report = null) {
 }
 
 function getDefaultCategories() {
-  return standardCategories.slice(0, defaultCategoryCount).map(name => ({
+  return standardCategories.value.slice(0, defaultCategoryCount).map(name => ({
     name,
     amount: 0,
     custom: false,
@@ -756,7 +760,7 @@ async function saveImportedReport() {
       .map(category => ({
         name: category.name,
         amount: Number(category.amount),
-        custom: !standardCategories.includes(category.name),
+        custom: !standardCategories.value.includes(category.name),
       })),
     required_categories: requiredDraft.value
       .filter(category => category.name && Number(category.amount) > 0)
@@ -772,11 +776,13 @@ async function saveImportedReport() {
 async function sendReportToAi(report) {
   aiError.value = ''
   sendingReportToAi.value = report.id
+  // Navigate immediately — AIChatView shows loading and then navigates to the chat
+  await router.push({ name: 'ai-chat' })
   try {
-    const chat = await aiChatsStore.analyzeReport(report.id)
-    await router.push({ name: 'ai-chat-detail', params: { chatId: chat.id } })
-  } catch (err) {
-    aiError.value = aiChatsStore.error || 'Не удалось отправить отчет в AI-анализ'
+    await aiChatsStore.analyzeReport(report.id)
+    // AIChatView watches pendingChatId and navigates to the specific chat
+  } catch {
+    // aiChatsStore.error will be displayed inside AIChatView
   } finally {
     sendingReportToAi.value = null
   }
@@ -1159,7 +1165,7 @@ function expenseRatioClass(report) {
 
 .reports-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
   gap: 1rem;
 }
 
@@ -1381,7 +1387,18 @@ function expenseRatioClass(report) {
   }
 
   .chart-frame {
-    height: 280px;
+    height: 240px;
+  }
+
+  .import-modal {
+    padding: 0.75rem;
+    overflow-x: hidden;
+  }
+
+  .modal-inner {
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 1.25rem;
   }
 }
 </style>

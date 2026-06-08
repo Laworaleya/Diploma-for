@@ -2,11 +2,11 @@
   <div class="page-container">
     <div class="page-header">
       <div>
-        <h1 class="page-title">Регулярные платежи</h1>
-        <p class="page-subtitle">Обязательные платежи и напоминания о ближайших списаниях</p>
+        <h1 class="page-title">{{ $t('recurring.title') }}</h1>
+        <p class="page-subtitle">{{ $t('recurring.subtitle') }}</p>
       </div>
       <button class="btn-primary-gradient" type="button" @click="openForm()">
-        + Добавить платеж
+        + {{ $t('recurring.add_payment') }}
       </button>
     </div>
 
@@ -15,21 +15,21 @@
         <div class="sc-icon"><i class="pi pi-list"></i></div>
         <div>
           <div class="stat-value">{{ paymentsStore.sortedPayments.length }}</div>
-          <div class="stat-label">Всего платежей</div>
+          <div class="stat-label">{{ $t('recurring.total_payments') }}</div>
         </div>
       </div>
       <div class="stat-card sc-primary">
         <div class="sc-icon"><i class="pi pi-credit-card"></i></div>
         <div>
           <div class="stat-value">{{ formatMoney(monthlyTotal) }}</div>
-          <div class="stat-label">Ежемесячная нагрузка</div>
+          <div class="stat-label">{{ $t('recurring.monthly_load') }}</div>
         </div>
       </div>
       <div class="stat-card" :class="urgentCount > 0 ? 'sc-urgent' : 'sc-safe'">
         <div class="sc-icon"><i class="pi pi-clock"></i></div>
         <div>
           <div class="stat-value">{{ urgentCount }}</div>
-          <div class="stat-label">Срочные и сегодня</div>
+          <div class="stat-label">{{ $t('recurring.urgent') }}</div>
         </div>
       </div>
     </div>
@@ -44,9 +44,9 @@
 
     <div v-else-if="!paymentsStore.sortedPayments.length" class="empty-state">
       <div class="empty-icon"><i class="pi pi-refresh"></i></div>
-      <h3>Регулярных платежей пока нет</h3>
-      <p>Добавьте платеж вручную или создайте отчет с обязательными категориями.</p>
-      <button class="btn-primary-gradient" type="button" @click="openForm()">+ Добавить платеж</button>
+      <h3>{{ $t('recurring.empty') }}</h3>
+      <p>{{ $t('recurring.empty_desc') }}</p>
+      <button class="btn-primary-gradient" type="button" @click="openForm()">+ {{ $t('recurring.add_payment') }}</button>
     </div>
 
     <div v-else class="payments-list">
@@ -64,24 +64,24 @@
           <div class="payment-title-row">
             <h2>{{ payment.title }}</h2>
             <span class="source-badge" v-if="payment.source === 'requiredCategory'">
-              из отчета
+              {{ $t('recurring.from_report') }}
             </span>
           </div>
           <p>{{ formatStatus(payment.status) }}</p>
         </div>
 
         <div class="payment-cell">
-          <span>Сумма</span>
+          <span>{{ $t('recurring.amount') }}</span>
           <strong>{{ formatMoney(payment.amount) }}</strong>
         </div>
 
         <div class="payment-cell">
-          <span>Следующий платеж</span>
+          <span>{{ $t('recurring.next_payment') }}</span>
           <strong>{{ formatDate(payment.nextPaymentDate) }}</strong>
         </div>
 
         <div class="payment-cell days-cell">
-          <span>Осталось</span>
+          <span>{{ $t('recurring.remaining') }}</span>
           <strong :class="payment.status">{{ formatDays(getDaysUntilPayment(payment.nextPaymentDate)) }}</strong>
         </div>
 
@@ -94,53 +94,53 @@
 
     <div v-if="showForm" class="modal-overlay" @click.self="closeForm">
       <div class="modal-box glass-card">
-        <h2 class="modal-title">{{ editingId ? 'Редактировать платеж' : 'Новый регулярный платеж' }}</h2>
+        <h2 class="modal-title">{{ editingId ? $t('recurring.edit_title') : $t('recurring.new_title') }}</h2>
 
         <form @submit.prevent="savePayment">
           <div class="form-group">
-            <label class="form-label-dark">Название платежа</label>
-            <input v-model="form.title" class="form-control-dark" required placeholder="Например, Кредит" />
+            <label class="form-label-dark">{{ $t('recurring.payment_name') }}</label>
+            <input v-model="form.title" class="form-control-dark" required :placeholder="$t('recurring.name_placeholder')" />
           </div>
 
           <div class="form-row">
             <div class="form-group flex-1">
-              <label class="form-label-dark">Сумма платежа</label>
+              <label class="form-label-dark">{{ $t('recurring.payment_amount') }}</label>
               <input v-model.number="form.amount" type="number" min="0" step="1" class="form-control-dark" required />
             </div>
             <div class="form-group flex-1">
-              <label class="form-label-dark">Дата платежа</label>
+              <label class="form-label-dark">{{ $t('recurring.payment_date') }}</label>
               <input v-model="form.originalPaymentDate" type="date" class="form-control-dark" required />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group flex-1">
-              <label class="form-label-dark">Цвет иконки</label>
+              <label class="form-label-dark">{{ $t('recurring.icon_color') }}</label>
               <select v-model="form.iconColor" class="form-select-dark">
-                <option value="purple">Фиолетовый</option>
-                <option value="green">Зеленый</option>
-                <option value="yellow">Желтый</option>
-                <option value="orange">Оранжевый</option>
-                <option value="red">Красный</option>
+                <option value="purple">{{ $t('recurring.color_purple') }}</option>
+                <option value="green">{{ $t('recurring.color_green') }}</option>
+                <option value="yellow">{{ $t('recurring.color_yellow') }}</option>
+                <option value="orange">{{ $t('recurring.color_orange') }}</option>
+                <option value="red">{{ $t('recurring.color_red') }}</option>
               </select>
             </div>
             <div class="form-group flex-1">
-              <label class="form-label-dark">Периодичность</label>
+              <label class="form-label-dark">{{ $t('recurring.frequency') }}</label>
               <select v-model="form.period" class="form-select-dark">
-                <option value="monthly">Каждый месяц</option>
+                <option value="monthly">{{ $t('recurring.monthly') }}</option>
               </select>
             </div>
           </div>
 
           <div class="preview-box" v-if="form.originalPaymentDate">
-            <span>Следующая дата будет рассчитана автоматически.</span>
+            <span>{{ $t('recurring.date_auto') }}</span>
           </div>
 
           <div class="form-actions">
-            <button type="button" class="btn-glass" @click="closeForm">Отмена</button>
+            <button type="button" class="btn-glass" @click="closeForm">{{ $t('recurring.cancel') }}</button>
             <button type="submit" class="btn-primary-gradient" :disabled="paymentsStore.loading">
               <span v-if="paymentsStore.loading" class="spinner"></span>
-              Сохранить
+              {{ $t('recurring.save') }}
             </button>
           </div>
         </form>
@@ -151,8 +151,11 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { useRecurringPaymentsStore } from '../stores/recurringPayments'
+
+const { t } = useI18n()
 
 const paymentsStore = useRecurringPaymentsStore()
 const authStore = useAuthStore()
@@ -228,7 +231,7 @@ async function savePayment() {
 }
 
 async function deletePayment(id) {
-  if (confirm('Удалить регулярный платеж?')) {
+  if (confirm(t('recurring.delete_confirm'))) {
     await paymentsStore.deletePayment(id)
   }
 }
@@ -251,17 +254,17 @@ function getDaysUntilPayment(value) {
 }
 
 function formatDays(days) {
-  if (days < 0) return `просрочено на ${Math.abs(days)} дн.`
-  if (days === 0) return 'сегодня'
-  return `${days} дн.`
+  if (days < 0) return `${t('recurring.overdue')} ${Math.abs(days)} ${t('recurring.days')}`
+  if (days === 0) return t('recurring.today')
+  return `${days} ${t('recurring.days')}`
 }
 
 function formatStatus(status) {
   const labels = {
-    safe: 'до платежа больше недели',
-    soon: 'платеж приближается',
-    urgent: 'осталось 1-3 дня',
-    overdue: 'сегодня или просрочено',
+    safe: t('recurring.more_week'),
+    soon: t('recurring.approaching'),
+    urgent: t('recurring.remaining_days'),
+    overdue: t('recurring.today_or_overdue'),
   }
   return labels[status] || status
 }
@@ -504,14 +507,54 @@ function formatStatus(status) {
     flex-direction: column;
   }
 
-  .stats-grid,
-  .payment-row {
-    grid-template-columns: 1fr;
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
   }
 
-  .days-cell,
+  /* Card layout: icon + name in top row, cells + actions in second row */
+  .payment-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .payment-icon {
+    flex-shrink: 0;
+  }
+
+  .payment-main {
+    flex: 1;
+    min-width: 0;
+  }
+
   .row-actions {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .payment-cell {
+    flex: 1;
+    min-width: 90px;
+  }
+
+  .days-cell {
     grid-column: auto;
+    min-width: 90px;
+  }
+
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-box {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    max-height: 90vh;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 100%;
   }
 }
 </style>

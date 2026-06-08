@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from app.models.user import UserCreate, UserLogin, UserUpdate
+from app.models.user import UserCreate, UserLogin, UserUpdate, TelegramAuthData
 from app.services import auth_service
 from app.core.dependencies import get_current_user
 
@@ -34,3 +34,15 @@ async def update_profile(
         current_user["id"],
         data.model_dump(exclude_unset=True),
     )
+
+
+@router.post("/telegram")
+async def telegram_login(data: TelegramAuthData):
+    """Login or register via Telegram Login Widget. Verifies HMAC hash."""
+    return await auth_service.telegram_login(data)
+
+
+@router.get("/link-code")
+async def generate_link_code(current_user: dict = Depends(get_current_user)):
+    """Generate a 6-digit one-time code for linking Telegram account to this web account."""
+    return await auth_service.generate_link_code(current_user["id"])

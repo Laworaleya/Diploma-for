@@ -127,7 +127,7 @@
             @click="planGoalWithAi(goal)"
           >
             <span v-if="planningGoalId === goal.id" class="spinner"></span>
-            Составить план с AI
+            {{ $t('goals.plan_ai') }}
           </button>
         </div>
       </div>
@@ -436,5 +436,8 @@ textarea.form-control-dark {
 @media (max-width: 768px) {
   .page-header { flex-direction: column; gap: 1rem; }
   .form-row { flex-direction: column; }
+  .goals-grid { grid-template-columns: 1fr; }
+  .goal-modal { padding: 0.75rem; }
+  .modal-body { padding: 1.25rem; max-height: 88vh; overflow-y: auto; }
 }
 </style>

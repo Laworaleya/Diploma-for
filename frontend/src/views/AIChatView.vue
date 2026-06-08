@@ -18,16 +18,16 @@
       <!-- Sidebar: chat list -->
       <aside class="chat-sidebar">
         <div class="sidebar-top">
-          <span class="sidebar-title">История</span>
+          <span class="sidebar-title">{{ $t('ai.history') }}</span>
           <button class="btn-primary-gradient new-chat-btn" type="button" @click="handleNewChat" :disabled="aiStore.loading">
             <i class="pi pi-plus"></i>
-            <span class="new-chat-label">Новый чат</span>
+            <span class="new-chat-label">{{ $t('ai.new_chat') }}</span>
           </button>
         </div>
 
         <div v-if="aiStore.loading && !aiStore.chats.length" class="sidebar-loading">
           <span class="spinner"></span>
-          <span>Загрузка</span>
+          <span>{{ $t('ai.loading') }}</span>
         </div>
 
         <div v-if="aiStore.error" class="sidebar-error">{{ aiStore.error }}</div>
@@ -53,18 +53,27 @@
 
         <div v-if="!aiStore.loading && !aiStore.chats.length" class="empty-sidebar">
           <i class="pi pi-comments"></i>
-          <p>Пока нет AI-чатов</p>
+          <p>{{ $t('ai.no_chats') }}</p>
         </div>
       </aside>
 
       <!-- Chat Panel -->
       <section class="chat-panel">
-        <div v-if="!aiStore.currentChat" class="chat-empty">
+        <!-- Analyzing overlay: shown while a context analysis is in progress -->
+        <div v-if="aiStore.analyzing" class="chat-empty analyzing-state">
+          <div class="analyzing-spinner">
+            <span class="spinner spinner-lg"></span>
+          </div>
+          <h2>{{ $t('ai.analyzing') }}</h2>
+          <p>{{ $t('ai.analyzing_wait') }}</p>
+        </div>
+
+        <div v-else-if="!aiStore.currentChat" class="chat-empty">
           <i class="pi pi-comments empty-icon-lg"></i>
-          <h2>Выберите чат или начните новый</h2>
-          <p>AI-раздел сохранит историю диалога и позволит продолжить анализ позже.</p>
+          <h2>{{ $t('ai.select_chat') }}</h2>
+          <p>{{ $t('ai.select_chat_desc') }}</p>
           <button class="btn-primary-gradient" type="button" @click="handleNewChat">
-            <i class="pi pi-plus"></i> Новый чат
+            <i class="pi pi-plus"></i> {{ $t('ai.new_chat') }}
           </button>
         </div>
 
@@ -88,7 +97,7 @@
               :class="msg.role"
             >
               <div class="msg-bubble" :class="{ error: msg.is_error }">
-                <div class="msg-author">{{ msg.role === 'user' ? 'Вы' : 'AI' }}</div>
+                <div class="msg-author">{{ msg.role === 'user' ? $t('ai.user_label') : $t('ai.ai_label') }}</div>
                 <div class="msg-text">{{ msg.content }}</div>
               </div>
             </div>
@@ -96,7 +105,7 @@
             <div v-if="aiStore.sending" class="msg-row assistant">
               <div class="msg-bubble typing">
                 <span class="spinner"></span>
-                <span>AI отвечает…</span>
+                <span>{{ $t('ai.thinking') }}</span>
               </div>
             </div>
           </div>
@@ -106,7 +115,7 @@
               v-model="draft"
               class="form-control-dark chat-textarea"
               rows="2"
-              placeholder="Напишите вопрос по финансам…"
+              :placeholder="$t('ai.input_placeholder')"
               :disabled="aiStore.sending"
               @keydown.enter.exact.prevent="handleSend"
             ></textarea>
@@ -129,21 +138,21 @@
     <Dialog
       v-model:visible="renameDialog"
       modal
-      header="Переименовать чат"
+      :header="$t('ai.rename_dialog')"
       :style="{ width: '360px' }"
       :draggable="false"
     >
       <input
         v-model="renameTitle"
         class="form-control-dark rename-input"
-        placeholder="Название чата"
+        :placeholder="$t('ai.chat_title_placeholder')"
         @keydown.enter="saveRename"
         ref="renameInput"
       />
       <template #footer>
-        <button class="btn-glass btn-sm-f" @click="renameDialog = false">Отмена</button>
+        <button class="btn-glass btn-sm-f" @click="renameDialog = false">{{ $t('common.cancel') }}</button>
         <button class="btn-primary-gradient btn-sm-f" @click="saveRename" :disabled="!renameTitle.trim()">
-          Сохранить
+          {{ $t('common.save') }}
         </button>
       </template>
     </Dialog>
@@ -153,9 +162,12 @@
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 import Menu from 'primevue/menu'
 import { useAIChatsStore } from '../stores/aiChats'
+
+const { t } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -177,12 +189,12 @@ const activeChatId = computed(() => route.params.chatId || aiStore.currentChat?.
 
 const chatMenuItems = computed(() => [
   {
-    label: 'Переименовать',
+    label: t('ai.rename'),
     icon: 'pi pi-pencil',
     command: () => openRename(aiStore.currentChat),
   },
   {
-    label: 'Удалить чат',
+    label: t('ai.delete_chat'),
     icon: 'pi pi-trash',
     command: () => handleDeleteChat(aiStore.currentChat?.id),
   },
@@ -190,12 +202,12 @@ const chatMenuItems = computed(() => [
 
 const itemMenuItems = computed(() => [
   {
-    label: 'Переименовать',
+    label: t('ai.rename'),
     icon: 'pi pi-pencil',
     command: () => openRename(itemMenuTarget.value),
   },
   {
-    label: 'Удалить',
+    label: t('common.delete'),
     icon: 'pi pi-trash',
     command: () => handleDeleteChat(itemMenuTarget.value?.id),
   },
@@ -221,6 +233,15 @@ watch(
 )
 
 watch(() => aiStore.messages.length, () => nextTick(scrollToBottom))
+// Scroll as soon as the typing indicator appears
+watch(() => aiStore.sending, (val) => { if (val) nextTick(scrollToBottom) })
+// Navigate to the chat once a context analysis completes
+watch(() => aiStore.pendingChatId, (chatId) => {
+  if (chatId) {
+    router.push({ name: 'ai-chat-detail', params: { chatId } })
+    aiStore.pendingChatId = null
+  }
+})
 
 async function handleNewChat() {
   const chat = await aiStore.createChat()
@@ -275,14 +296,14 @@ async function saveRename() {
 
 async function handleDeleteChat(chatId) {
   if (!chatId) return
-  if (!confirm('Удалить этот чат?')) return
+  if (!confirm(t('ai.delete_confirm'))) return
   const wasActive = chatId === route.params.chatId
   await aiStore.deleteChat(chatId)
   if (wasActive) router.push({ name: 'ai-chat' })
 }
 
 function sourceLabel(source) {
-  return { manual: 'Обычный чат', financial_report: 'Финансовый отчет', goal: 'Финансовая цель' }[source] || 'AI-чат'
+  return { manual: t('ai.source_manual'), financial_report: t('ai.source_report'), goal: t('ai.source_goal') }[source] || 'AI-чат'
 }
 
 function scrollToBottom() {
@@ -479,6 +500,27 @@ function scrollToBottom() {
   text-align: center;
 }
 
+.analyzing-state {
+  gap: 1rem;
+}
+
+.analyzing-spinner {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(99, 102, 241, 0.12);
+  border-radius: 50%;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+.spinner-lg {
+  width: 24px;
+  height: 24px;
+  border-width: 3px;
+}
+
 .empty-icon-lg {
   font-size: 3rem;
   color: var(--text-muted);
@@ -613,7 +655,7 @@ function scrollToBottom() {
 @media (max-width: 768px) {
   .ai-page {
     padding: 0;
-    height: calc(100vh - 60px - 64px);
+    height: calc(100vh - 52px - 60px);
   }
 
   .ai-layout {

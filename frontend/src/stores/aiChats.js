@@ -9,6 +9,8 @@ export const useAIChatsStore = defineStore('aiChats', {
     loading: false,
     sending: false,
     error: null,
+    analyzing: false,       // true while AI context analysis is in progress
+    pendingChatId: null,    // chatId to navigate to after analysis completes
   }),
 
   getters: {
@@ -71,15 +73,25 @@ export const useAIChatsStore = defineStore('aiChats', {
     async sendMessage(chatId, content) {
       this.sending = true
       this.error = null
+
+      // Show the user's message immediately so it's visible while AI thinks
+      const tempId = `temp_${Date.now()}`
+      this.messages.push({ id: tempId, role: 'user', content, is_error: false })
+
       try {
         const res = await api.post(`/ai/chats/${chatId}/messages`, { content })
-        this._appendMessage(res.data.user_message)
+        // Replace temp entry with the real message from the server
+        const idx = this.messages.findIndex(m => m.id === tempId)
+        if (idx !== -1) this.messages[idx] = res.data.user_message
+        else this._appendMessage(res.data.user_message)
         this._appendMessage(res.data.assistant_message)
         this._upsertChat(res.data.chat)
         this.currentChat = res.data.chat
         if (res.data.error) this.error = res.data.error
         return res.data
       } catch (err) {
+        // Remove the optimistic message on failure so the user can retry
+        this.messages = this.messages.filter(m => m.id !== tempId)
         this.error = err.response?.data?.detail || 'AI сейчас недоступен'
         throw err
       } finally {
@@ -88,17 +100,36 @@ export const useAIChatsStore = defineStore('aiChats', {
     },
 
     async analyzeReport(reportId) {
-      this.loading = true
+      this.analyzing = true
+      this.pendingChatId = null
       this.error = null
       try {
         const res = await api.post(`/ai/reports/${reportId}/analyze`)
         this._applyContextResponse(res.data)
+        this.pendingChatId = res.data.chat.id
         return res.data.chat
       } catch (err) {
         this.error = err.response?.data?.detail || 'Не удалось отправить отчет в AI'
         throw err
       } finally {
-        this.loading = false
+        this.analyzing = false
+      }
+    },
+
+    async analyzeTrackerReport(period) {
+      this.analyzing = true
+      this.pendingChatId = null
+      this.error = null
+      try {
+        const res = await api.post('/tracker/ai-report', { period })
+        this._applyContextResponse(res.data)
+        this.pendingChatId = res.data.chat.id
+        return res.data.chat
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Не удалось выполнить AI-анализ трекера'
+        throw err
+      } finally {
+        this.analyzing = false
       }
     },
 

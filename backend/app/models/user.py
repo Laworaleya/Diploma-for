@@ -22,14 +22,26 @@ class UserUpdate(BaseModel):
     currency: Optional[str] = Field(None, pattern="^(KZT|USD|EUR|RUB)$")
 
 
+class TelegramAuthData(BaseModel):
+    id: int
+    first_name: str
+    last_name: Optional[str] = None
+    username: Optional[str] = None
+    photo_url: Optional[str] = None
+    auth_date: int
+    hash: str
+
+
 class UserResponse(BaseModel):
     id: str
-    email: str
+    email: Optional[str] = None
     name: str
     preferred_language: str
     currency: str
     role: str
     created_at: datetime
+    telegram_id: Optional[int] = None
+    telegram_username: Optional[str] = None
 
 
 class TokenResponse(BaseModel):

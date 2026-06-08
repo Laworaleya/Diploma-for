@@ -100,6 +100,7 @@ async def analyze_report(report_id: str, current_user: dict) -> dict:
         display_content=display_content,
         assistant_content=assistant_content,
         context_type="financial_report",
+        tool_choice="required",
     )
 
 
@@ -135,6 +136,99 @@ async def plan_goal(goal_id: str, current_user: dict) -> dict:
     )
 
 
+async def analyze_tracker_report(period: str, current_user: dict) -> dict:
+    """Build a tracker-based financial report and get AI analysis."""
+    from calendar import monthrange
+    from datetime import datetime, timezone
+    from app.core.database import get_database
+
+    user_id = current_user["id"]
+    db = get_database()
+
+    year, month = map(int, period.split("-"))
+    month_start = datetime(year, month, 1, tzinfo=timezone.utc)
+    last_day = monthrange(year, month)[1]
+    month_end = datetime(year, month, last_day, 23, 59, 59, tzinfo=timezone.utc)
+
+    budget = await db.user_budgets.find_one({"user_id": user_id, "period": period})
+    monthly_limit = budget.get("monthly_limit", 0) if budget else 0
+    total_income = budget.get("total_income", 0) if budget else 0
+    total_expense = budget.get("total_expense", 0) if budget else 0
+    balance = total_income - total_expense
+    usage_pct = round(total_expense / monthly_limit * 100, 1) if monthly_limit > 0 else 0
+
+    cat_pipeline = [
+        {"$match": {"user_id": user_id, "type": "expense", "created_at": {"$gte": month_start, "$lte": month_end}}},
+        {"$group": {"_id": "$category", "amount": {"$sum": "$amount"}}},
+        {"$sort": {"amount": -1}},
+    ]
+    categories = []
+    async for doc in db.transactions.aggregate(cat_pipeline):
+        pct = round(doc["amount"] / total_expense * 100, 1) if total_expense > 0 else 0
+        categories.append({"name": doc["_id"], "amount": doc["amount"], "pct": pct})
+
+    recurring_payments = await recurring_payment_service.get_user_recurring_payments(user_id)
+    recurring_summary = [
+        {
+            "name": p.get("name"),
+            "amount": p.get("amount"),
+            "currency": p.get("currency"),
+            "frequency": p.get("frequency"),
+            "next_payment_date": str(p.get("nextPaymentDate", "")),
+        }
+        for p in recurring_payments
+    ]
+
+    month_names = {
+        1: "Январь", 2: "Февраль", 3: "Март", 4: "Апрель",
+        5: "Май", 6: "Июнь", 7: "Июль", 8: "Август",
+        9: "Сентябрь", 10: "Октябрь", 11: "Ноябрь", 12: "Декабрь",
+    }
+    month_label = f"{month_names.get(month, str(month))} {year}"
+
+    payload = {
+        "period": period,
+        "month_label": month_label,
+        "budget": {
+            "monthly_limit": monthly_limit,
+            "total_income": total_income,
+            "total_expense": total_expense,
+            "balance": balance,
+            "usage_pct": usage_pct,
+        },
+        "categories": categories,
+        "recurring_payments": recurring_summary,
+    }
+
+    display_content = f"Проанализируй мои расходы за {month_label} и дай финансовые советы."
+    assistant_content = _build_context_prompt(
+        title="tracker_report_analysis",
+        language=current_user.get("preferred_language", "ru"),
+        payload=payload,
+        task=(
+            "Проанализируй расходы из tracker-отчёта: оцени структуру трат, "
+            "учти recurring_payments как обязательную нагрузку, "
+            "выдели категории для экономии, дай 3-5 практичных советов и "
+            "оцени финансовое здоровье по шкале 1-10 с объяснением."
+        ),
+    )
+
+    chat = await _create_context_chat(
+        user_id=user_id,
+        title=f"AI-анализ трекера — {month_label}",
+        source="financial_report",
+        source_label=month_label,
+    )
+    return await _send_to_assistant(
+        chat=chat,
+        user_id=user_id,
+        display_content=display_content,
+        assistant_content=assistant_content,
+        context_type="financial_report",
+        tool_choice="required",
+    )
+
+
 async def _create_context_chat(
     user_id: str,
     title: str,
@@ -157,6 +251,7 @@ async def _send_to_assistant(
     display_content: str,
     assistant_content: str,
     context_type: AIContextSource,
+    tool_choice: str | None = None,
 ) -> dict:
     # Load history before saving the new message so it isn't included
     history = await ai_chat_repo.find_messages_by_chat(chat["id"], user_id)
@@ -174,7 +269,7 @@ async def _send_to_assistant(
 
     error = None
     try:
-        answer = await openai_assistant_service.complete(history, assistant_content)
+        answer = await openai_assistant_service.complete(history, assistant_content, tool_choice=tool_choice)
         assistant_message = await _create_assistant_message(chat["id"], user_id, answer, context_type)
     except OpenAIAssistantError as exc:
         error = _friendly_openai_error(exc)

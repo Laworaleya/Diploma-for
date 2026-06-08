@@ -38,12 +38,20 @@ class OpenAIAssistantService:
                 "OpenAI не настроен. Задайте OPENAI_API_KEY и OPENAI_PROMPT_ID на backend."
             )
 
-    async def complete(self, history: list[dict], new_user_content: str) -> str:
+    async def complete(
+        self,
+        history: list[dict],
+        new_user_content: str,
+        tool_choice: str | None = None,
+    ) -> str:
         """Call OpenAI Responses API using the stored Chat Prompt.
 
         Model, system prompt, vector store, and other settings are taken
         from the stored prompt — we do NOT override the model here so the
         prompt's own configuration is used as-is.
+
+        Pass tool_choice="required" to force File Search on the first call;
+        leave None for follow-up messages so the model decides automatically.
         """
         self._ensure_configured()
 
@@ -53,19 +61,24 @@ class OpenAIAssistantService:
                 input_messages.append({"role": msg["role"], "content": msg["content"]})
         input_messages.append({"role": "user", "content": new_user_content})
 
-        response = await asyncio.to_thread(self._call_responses, input_messages)
+        response = await asyncio.to_thread(self._call_responses, input_messages, tool_choice)
         return self._extract_text(response)
 
-    def _call_responses(self, input_messages: list[dict[str, str]]) -> dict[str, Any]:
+    def _call_responses(
+        self,
+        input_messages: list[dict[str, str]],
+        tool_choice: str | None = None,
+    ) -> dict[str, Any]:
         # Model is intentionally omitted — the stored prompt defines the model,
         # so we avoid any mismatch with model-specific parameters like reasoning_effort.
-        body = json.dumps(
-            {
-                "prompt": {"id": self.prompt_id},
-                "input": input_messages,
-            },
-            ensure_ascii=False,
-        ).encode("utf-8")
+        body_dict: dict[str, Any] = {
+            "prompt": {"id": self.prompt_id},
+            "input": input_messages,
+        }
+        if tool_choice is not None:
+            body_dict["tool_choice"] = tool_choice
+
+        body = json.dumps(body_dict, ensure_ascii=False).encode("utf-8")
 
         request = urllib.request.Request(
             f"{self.API_BASE_URL}/responses",

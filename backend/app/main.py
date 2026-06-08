@@ -8,7 +8,7 @@ from app.config import settings
 from app.core.cache import close_cache, connect_cache
 from app.core.database import close_db, connect_db
 from app.core.middleware import LoggingMiddleware, logger
-from app.api import admin, ai_chats, auth, goals, recurring_payments, reports
+from app.api import admin, ai_chats, auth, goals, recurring_payments, reports, tracker
 
 
 @asynccontextmanager
@@ -70,6 +70,7 @@ app.include_router(goals.router)
 app.include_router(admin.router)
 app.include_router(recurring_payments.router)
 app.include_router(ai_chats.router)
+app.include_router(tracker.router)
 
 
 # ── Health checks ──────────────────────────────────────────────────────────────

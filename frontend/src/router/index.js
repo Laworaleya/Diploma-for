@@ -37,6 +37,12 @@ const routes = [
     meta: { auth: true },
   },
   {
+    path: '/tracker',
+    name: 'tracker',
+    component: () => import('../views/TrackerView.vue'),
+    meta: { auth: true },
+  },
+  {
     path: '/recurring-payments',
     name: 'recurring-payments',
     component: () => import('../views/RecurringPaymentsView.vue'),

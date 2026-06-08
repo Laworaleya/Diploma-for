@@ -27,6 +27,7 @@ const tabs = [
   { to: '/reports', labelKey: 'nav.reports', icon: 'pi pi-chart-bar' },
   { to: '/goals', labelKey: 'nav.goals', icon: 'pi pi-flag' },
   { to: '/ai', labelKey: 'nav.ai', icon: 'pi pi-comments' },
+  { to: '/tracker', labelKey: 'nav.tracker', icon: 'pi pi-chart-line' },
   { to: '/recurring-payments', labelKey: 'nav.recurring_payments', icon: 'pi pi-refresh' },
 ]
 

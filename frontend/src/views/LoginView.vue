@@ -70,10 +70,7 @@ import LanguageSwitcher from '../components/common/LanguageSwitcher.vue'
 const router = useRouter()
 const authStore = useAuthStore()
 
-const form = reactive({
-  email: '',
-  password: '',
-})
+const form = reactive({ email: '', password: '' })
 
 async function handleLogin() {
   try {
@@ -186,5 +183,10 @@ async function handleLogin() {
   display: flex;
   justify-content: center;
   margin-top: 1.5rem;
+}
+
+@media (max-width: 480px) {
+  .auth-page { padding: 1rem; align-items: flex-start; padding-top: 2rem; }
+  .auth-card { padding: 1.5rem; }
 }
 </style>

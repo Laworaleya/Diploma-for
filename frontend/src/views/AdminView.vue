@@ -2,8 +2,8 @@
   <div class="page-container">
     <div class="admin-header">
       <div>
-        <h1 class="page-title">Панель администратора</h1>
-        <p class="page-subtitle">Управление пользователями и мониторинг системы</p>
+        <h1 class="page-title">{{ $t('admin.title') }}</h1>
+        <p class="page-subtitle">{{ $t('admin.subtitle') }}</p>
       </div>
     </div>
 
@@ -30,18 +30,18 @@
     <!-- ── TAB: USERS ─────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'users'" class="tab-content">
       <div class="section-header">
-        <span class="section-title">Пользователи ({{ adminStore.users.length }})</span>
+        <span class="section-title">{{ $t('admin.users_title', { count: adminStore.users.length }) }}</span>
         <button class="btn-outline btn-sm" @click="adminStore.fetchUsers()">
-          <i class="pi pi-refresh"></i> Обновить
+          <i class="pi pi-refresh"></i> {{ $t('common.refresh') }}
         </button>
       </div>
 
       <div v-if="adminStore.loading" class="loading-state">
-        <i class="pi pi-spin pi-spinner"></i> Загрузка...
+        <i class="pi pi-spin pi-spinner"></i> {{ $t('common.loading') }}
       </div>
 
       <div v-else-if="adminStore.users.length === 0" class="empty-state">
-        Пользователи не найдены
+        {{ $t('admin.no_users') }}
       </div>
 
       <div v-else class="table-wrap">
@@ -49,12 +49,12 @@
           <thead>
             <tr>
               <th>Email</th>
-              <th>Имя</th>
-              <th>Роль</th>
-              <th>Отчётов</th>
-              <th>Дата регистрации</th>
-              <th>Статус</th>
-              <th>Действия</th>
+              <th>{{ $t('admin.col_name') }}</th>
+              <th>{{ $t('admin.col_role') }}</th>
+              <th>{{ $t('admin.col_reports') }}</th>
+              <th>{{ $t('admin.col_reg_date') }}</th>
+              <th>{{ $t('admin.col_status') }}</th>
+              <th>{{ $t('admin.col_actions') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -73,14 +73,14 @@
               <td class="cell-center">{{ user.report_count ?? 0 }}</td>
               <td class="cell-date">{{ formatDate(user.created_at) }}</td>
               <td>
-                <span v-if="user.is_blocked" class="badge badge-blocked">Заблокирован</span>
-                <span v-else class="badge badge-active">Активен</span>
+                <span v-if="user.is_blocked" class="badge badge-blocked">{{ $t('admin.status_blocked') }}</span>
+                <span v-else class="badge badge-active">{{ $t('admin.status_active') }}</span>
               </td>
               <td class="cell-actions">
                 <button
                   v-if="!user.is_blocked && user.role !== 'admin'"
                   class="btn-action btn-warn"
-                  title="Заблокировать"
+                  :title="$t('admin.block_btn')"
                   @click="handleBlock(user)"
                 >
                   <i class="pi pi-ban"></i>
@@ -88,7 +88,7 @@
                 <button
                   v-if="user.role !== 'admin'"
                   class="btn-action btn-danger"
-                  title="Удалить"
+                  :title="$t('common.delete')"
                   @click="handleDelete(user)"
                 >
                   <i class="pi pi-trash"></i>
@@ -103,68 +103,68 @@
     <!-- ── TAB: STATS ─────────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'stats'" class="tab-content">
       <div class="section-header">
-        <span class="section-title">Статистика системы</span>
+        <span class="section-title">{{ $t('admin.stats_title') }}</span>
         <button class="btn-outline btn-sm" @click="adminStore.fetchStats()">
-          <i class="pi pi-refresh"></i> Обновить
+          <i class="pi pi-refresh"></i> {{ $t('common.refresh') }}
         </button>
       </div>
 
       <div v-if="adminStore.loading" class="loading-state">
-        <i class="pi pi-spin pi-spinner"></i> Загрузка...
+        <i class="pi pi-spin pi-spinner"></i> {{ $t('common.loading') }}
       </div>
 
       <div v-else-if="adminStore.stats" class="stats-grid">
         <div class="stat-card stat-card-users">
           <div class="stat-icon"><i class="pi pi-users"></i></div>
           <div class="stat-value">{{ adminStore.stats.total_users }}</div>
-          <div class="stat-label">Всего пользователей</div>
+          <div class="stat-label">{{ $t('admin.stat_users') }}</div>
           <div class="stat-accent"></div>
         </div>
         <div class="stat-card stat-card-reports">
           <div class="stat-icon"><i class="pi pi-file"></i></div>
           <div class="stat-value">{{ adminStore.stats.total_reports }}</div>
-          <div class="stat-label">Всего отчётов</div>
+          <div class="stat-label">{{ $t('admin.stat_reports') }}</div>
           <div class="stat-accent"></div>
         </div>
         <div class="stat-card stat-card-imports">
           <div class="stat-icon"><i class="pi pi-upload"></i></div>
           <div class="stat-value">{{ adminStore.stats.total_kaspi_imports }}</div>
-          <div class="stat-label">PDF-импортов Kaspi</div>
+          <div class="stat-label">{{ $t('admin.stat_imports') }}</div>
           <div class="stat-accent"></div>
         </div>
         <div class="stat-card stat-card-chats">
           <div class="stat-icon"><i class="pi pi-comments"></i></div>
           <div class="stat-value">{{ adminStore.stats.total_ai_chats }}</div>
-          <div class="stat-label">AI-чатов</div>
+          <div class="stat-label">{{ $t('admin.stat_ai_chats') }}</div>
           <div class="stat-accent"></div>
         </div>
       </div>
 
-      <div v-else class="empty-state">Нет данных</div>
+      <div v-else class="empty-state">{{ $t('admin.no_data') }}</div>
     </div>
 
     <!-- ── TAB: AI MONITOR ────────────────────────────────────────────────── -->
     <div v-if="activeTab === 'ai'" class="tab-content">
       <div class="section-header">
-        <span class="section-title">AI мониторинг</span>
+        <span class="section-title">{{ $t('admin.ai_title') }}</span>
         <button class="btn-outline btn-sm" @click="adminStore.fetchAiStats()">
-          <i class="pi pi-refresh"></i> Обновить
+          <i class="pi pi-refresh"></i> {{ $t('common.refresh') }}
         </button>
       </div>
 
       <div v-if="adminStore.loading" class="loading-state">
-        <i class="pi pi-spin pi-spinner"></i> Загрузка...
+        <i class="pi pi-spin pi-spinner"></i> {{ $t('common.loading') }}
       </div>
 
       <div v-else-if="adminStore.aiStats">
         <div class="ai-error-banner">
           <i class="pi pi-exclamation-circle"></i>
-          <span>Всего ошибок AI: <strong>{{ adminStore.aiStats.total_ai_errors }}</strong></span>
+          <span>{{ $t('admin.ai_errors_total') }} <strong>{{ adminStore.aiStats.total_ai_errors }}</strong></span>
         </div>
 
-        <div class="section-title mt-section">Топ-10 вопросов пользователей</div>
+        <div class="section-title mt-section">{{ $t('admin.top_questions') }}</div>
         <div v-if="adminStore.aiStats.top_questions.length === 0" class="empty-state">
-          Вопросов пока нет
+          {{ $t('admin.no_questions') }}
         </div>
         <div v-else class="questions-list">
           <div
@@ -179,34 +179,34 @@
         </div>
       </div>
 
-      <div v-else class="empty-state">Нет данных</div>
+      <div v-else class="empty-state">{{ $t('admin.no_data') }}</div>
     </div>
 
     <!-- ── TAB: IMPORT ERRORS ─────────────────────────────────────────────── -->
     <div v-if="activeTab === 'errors'" class="tab-content">
       <div class="section-header">
-        <span class="section-title">Ошибки импорта PDF (последние 50)</span>
+        <span class="section-title">{{ $t('admin.errors_title') }}</span>
         <button class="btn-outline btn-sm" @click="adminStore.fetchImportErrors()">
-          <i class="pi pi-refresh"></i> Обновить
+          <i class="pi pi-refresh"></i> {{ $t('common.refresh') }}
         </button>
       </div>
 
       <div v-if="adminStore.loading" class="loading-state">
-        <i class="pi pi-spin pi-spinner"></i> Загрузка...
+        <i class="pi pi-spin pi-spinner"></i> {{ $t('common.loading') }}
       </div>
 
       <div v-else-if="adminStore.importErrors.length === 0" class="empty-state">
-        Ошибок импорта нет
+        {{ $t('admin.no_import_errors') }}
       </div>
 
       <div v-else class="table-wrap">
         <table class="admin-table">
           <thead>
             <tr>
-              <th>Дата</th>
+              <th>{{ $t('admin.col_date') }}</th>
               <th>User ID</th>
-              <th>Файл</th>
-              <th>Ошибка</th>
+              <th>{{ $t('admin.col_file') }}</th>
+              <th>{{ $t('admin.col_error') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -224,14 +224,11 @@
     <!-- Confirm delete modal -->
     <div v-if="confirmTarget" class="modal-backdrop" @click.self="confirmTarget = null">
       <div class="modal-box">
-        <h3 class="modal-title">Удалить пользователя?</h3>
-        <p class="modal-body">
-          Будут удалены <strong>{{ confirmTarget.email }}</strong> и все его данные:
-          отчёты, цели, чаты, платежи. Это действие необратимо.
-        </p>
+        <h3 class="modal-title">{{ $t('admin.delete_user_title') }}</h3>
+        <p class="modal-body" v-html="$t('admin.delete_user_body', { email: `<strong>${confirmTarget.email}</strong>` })"></p>
         <div class="modal-actions">
-          <button class="btn-outline" @click="confirmTarget = null">Отмена</button>
-          <button class="btn-danger-solid" @click="confirmDelete">Удалить</button>
+          <button class="btn-outline" @click="confirmTarget = null">{{ $t('common.cancel') }}</button>
+          <button class="btn-danger-solid" @click="confirmDelete">{{ $t('common.delete') }}</button>
         </div>
       </div>
     </div>
@@ -239,20 +236,22 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAdminStore } from '../stores/admin'
+import { useI18n } from 'vue-i18n'
 
 const adminStore = useAdminStore()
+const { t, locale } = useI18n()
 
 const activeTab = ref('users')
 const confirmTarget = ref(null)
 
-const tabs = [
-  { key: 'users',  label: 'Пользователи',    icon: 'pi pi-users' },
-  { key: 'stats',  label: 'Статистика',       icon: 'pi pi-chart-bar' },
-  { key: 'ai',     label: 'AI мониторинг',    icon: 'pi pi-microchip-ai' },
-  { key: 'errors', label: 'Ошибки импорта',   icon: 'pi pi-file-excel' },
-]
+const tabs = computed(() => [
+  { key: 'users',  label: t('admin.tab_users'),  icon: 'pi pi-users' },
+  { key: 'stats',  label: t('admin.tab_stats'),  icon: 'pi pi-chart-bar' },
+  { key: 'ai',     label: t('admin.tab_ai'),     icon: 'pi pi-microchip-ai' },
+  { key: 'errors', label: t('admin.tab_errors'), icon: 'pi pi-file-excel' },
+])
 
 const tabLoaders = {
   users:  () => adminStore.fetchUsers(),
@@ -292,7 +291,8 @@ async function confirmDelete() {
 
 function formatDate(iso) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('ru-RU', {
+  const tag = { ru: 'ru-RU', en: 'en-US', kk: 'kk-KZ' }[locale.value] || 'ru-RU'
+  return new Date(iso).toLocaleDateString(tag, {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })

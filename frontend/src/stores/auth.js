@@ -47,6 +47,21 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    async telegramLogin(telegramData) {
+      this.loading = true
+      this.error = null
+      try {
+        const res = await api.post('/auth/telegram', telegramData)
+        this._setAuth(res.data)
+        return res.data
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Telegram login failed'
+        throw err
+      } finally {
+        this.loading = false
+      }
+    },
+
     async updateProfile(data) {
       this.loading = true
       try {

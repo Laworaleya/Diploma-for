@@ -62,6 +62,50 @@ async def update_user(user_id: str, update_data: dict) -> Optional[dict]:
     return _serialize_doc(result) if result else None
 
 
+async def find_user_by_telegram_id(telegram_id: int) -> Optional[dict]:
+    """Find user by Telegram ID."""
+    db = get_database()
+    user = await db.users.find_one({"telegram_id": telegram_id})
+    return _serialize_doc(user) if user else None
+
+
+async def create_user_from_telegram(telegram_id: int, name: str, username: Optional[str] = None) -> dict:
+    """Create a user account linked to Telegram (no email/password)."""
+    db = get_database()
+    user_data = {
+        "telegram_id": telegram_id,
+        "telegram_username": username,
+        "name": name,
+        "preferred_language": "ru",
+        "currency": "KZT",
+        "role": "user",
+        "created_at": datetime.now(timezone.utc),
+    }
+    result = await db.users.insert_one(user_data)
+    user_data["id"] = str(result.inserted_id)
+    user_data.pop("_id", None)
+    user_data["created_at"] = user_data["created_at"].isoformat()
+    return user_data
+
+
+async def link_telegram_to_user(user_id: str, telegram_id: int, username: Optional[str] = None) -> Optional[dict]:
+    """Link a Telegram account to an existing user."""
+    return await update_user(user_id, {"telegram_id": telegram_id, "telegram_username": username})
+
+
+async def get_all_users_with_telegram() -> list:
+    """Get all users that have a telegram_id (for broadcasts)."""
+    db = get_database()
+    cursor = db.users.find(
+        {"telegram_id": {"$exists": True, "$ne": None}},
+        {"hashed_password": 0},
+    )
+    users = []
+    async for user in cursor:
+        users.append(_serialize_doc(user))
+    return users
+
+
 async def get_all_users(skip: int = 0, limit: int = 50) -> list:
     """Get all users (for admin). Returns anonymized data."""
     db = get_database()
