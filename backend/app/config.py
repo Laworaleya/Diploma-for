@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # MongoDB
-    MONGODB_URI: str = "mongodb://localhost:27017/financial_literacy"
+    MONGODB_URI: str = ""  # Required: set to mongodb+srv://... from MongoDB Atlas
     MONGODB_DB_NAME: str = "financial_literacy"
 
     # Redis
@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     # OpenAI
     OPENAI_API_KEY: str = ""
     OPENAI_PROMPT_ID: str = ""
-    OPENAI_MODEL: str = "gpt-4.1-mini"
+    OPENAI_MODEL: str = "gpt-5.4-mini"
     OPENAI_API_TIMEOUT_SECONDS: int = 45
 
     # JWT

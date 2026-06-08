@@ -1,0 +1,58 @@
+services:
+  # ── Backend: FastAPI ────────────────────────────────────────────────────────
+  - type: web
+    name: finlit-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    envVars:
+      - key: MONGODB_URI
+        sync: false          # Set manually in Render dashboard (MongoDB Atlas URI)
+      - key: MONGODB_DB_NAME
+        value: financial_literacy
+      - key: JWT_SECRET
+        generateValue: true  # Render auto-generates a secure random value
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_EXPIRATION_MINUTES
+        value: 1440
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_PROMPT_ID
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.4-mini
+      - key: OPENAI_API_TIMEOUT_SECONDS
+        value: 45
+      - key: CORS_ORIGINS
+        sync: false          # Set to your frontend URL e.g. https://finlit-frontend.onrender.com
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_BOT_USERNAME
+        sync: false
+      - key: REDIS_URI
+        value: ""            # Leave empty to disable caching (optional)
+      - key: APP_NAME
+        value: FinLit Platform
+      - key: APP_VERSION
+        value: 1.0.0
+
+  # ── Frontend: Vue SPA (Static Site) ────────────────────────────────────────
+  - type: web
+    name: finlit-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    plan: free
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false          # Set to your backend URL e.g. https://finlit-backend.onrender.com
+      - key: VITE_TELEGRAM_BOT_USERNAME
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

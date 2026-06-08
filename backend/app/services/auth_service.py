@@ -150,4 +150,6 @@ def _build_user_response(user: dict) -> dict:
         "currency": user.get("currency", "KZT"),
         "role": user.get("role", "user"),
         "created_at": created,
+        "telegram_id": user.get("telegram_id"),
+        "telegram_username": user.get("telegram_username"),
     }

@@ -1,6 +1,10 @@
-# Environment
+# Environment — never commit real secrets
 .env
+frontend/.env
+backend/.env
 *.env.local
+*.env.production
+# .env.example files ARE committed (they contain no secrets)
 
 # Python
 __pycache__/

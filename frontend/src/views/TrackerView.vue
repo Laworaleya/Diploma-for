@@ -201,38 +201,52 @@
               <div class="way-title">{{ $t('tracker.way2_title') }}</div>
               <div class="way-desc">{{ $t('tracker.way2_desc') }}</div>
 
-              <!-- Step: no code yet -->
-              <div v-if="!linkCode" class="way-actions">
-                <button class="btn-primary-gradient" :disabled="linkLoading" @click="getlinkCode">
-                  <span v-if="linkLoading" class="spinner"></span>
-                  {{ linkLoading ? '' : $t('tracker.link_telegram_btn') }}
-                </button>
-              </div>
+              <div class="ob-tg-steps">
+                <!-- Step 1 -->
+                <div class="ob-tg-step">
+                  <span class="ob-tg-num">1</span>
+                  <div class="ob-tg-body">
+                    <span class="ob-tg-text">Открой бота в Telegram</span>
+                    <a :href="telegramUrl" target="_blank" class="btn-glass ob-tg-btn">Открыть бота</a>
+                  </div>
+                </div>
 
-              <!-- Step: code received -->
-              <div v-else class="link-steps">
-                <div class="link-step">
-                  <span class="step-num">1</span>
-                  <span>{{ $t('tracker.open_bot') }}</span>
-                  <a :href="telegramUrl" target="_blank" class="btn-glass step-open">{{ $t('tracker.open_bot_link') }}</a>
+                <!-- Step 2 -->
+                <div class="ob-tg-step">
+                  <span class="ob-tg-num">2</span>
+                  <div class="ob-tg-body">
+                    <span class="ob-tg-text">Нажми /start и введи месячный бюджет — выполни первую команду которую просит бот. Только после этого вставь код ниже.</span>
+                  </div>
                 </div>
-                <div class="link-step">
-                  <span class="step-num">2</span>
-                  <span>{{ $t('tracker.send_command') }}</span>
+
+                <!-- Step 3 -->
+                <div class="ob-tg-step">
+                  <span class="ob-tg-num">3</span>
+                  <div class="ob-tg-body">
+                    <span class="ob-tg-text">Вставь этот код в бот</span>
+                    <button v-if="!linkCode" class="btn-primary-gradient ob-tg-gen-btn" :disabled="linkLoading" @click="getlinkCode">
+                      <span v-if="linkLoading" class="spinner"></span>
+                      {{ linkLoading ? '' : 'Получить код' }}
+                    </button>
+                    <div v-else class="ob-tg-code-row">
+                      <code>/link {{ linkCode }}</code>
+                      <button class="copy-btn" @click="copyCode">{{ copied ? 'Скопировано' : 'Копировать' }}</button>
+                    </div>
+                    <div v-if="linkCode" class="ob-tg-code-meta">
+                      <span class="link-note">{{ $t('tracker.code_expires') }}</span>
+                      <button class="link-reset" @click="linkCode = null">{{ $t('tracker.new_code') }}</button>
+                    </div>
+                  </div>
                 </div>
-                <div class="link-code-box">
-                  <code>/link {{ linkCode }}</code>
-                  <button class="copy-btn" @click="copyCode" :title="copied ? 'Скопировано!' : 'Копировать'">
-                    {{ copied ? '✅' : '📋' }}
-                  </button>
+
+                <!-- Step 4 -->
+                <div class="ob-tg-step">
+                  <span class="ob-tg-num">4</span>
+                  <div class="ob-tg-body">
+                    <span class="ob-tg-text">Обнови страницу — данные появятся</span>
+                    <button class="btn-glass ob-tg-btn" @click="refreshWithProfile">Обновить</button>
+                  </div>
                 </div>
-                <div class="link-step">
-                  <span class="step-num">3</span>
-                  <span>{{ $t('tracker.refresh_page') }}</span>
-                  <button class="btn-glass step-open" @click="loadAll">{{ $t('tracker.refresh_btn') }}</button>
-                </div>
-                <p class="link-note">{{ $t('tracker.code_expires') }}</p>
-                <button class="link-reset" @click="linkCode = null">{{ $t('tracker.new_code') }}</button>
               </div>
             </div>
           </div>
@@ -411,8 +425,19 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAIChatsStore } from '../stores/aiChats'
+import { useAuthStore } from '../stores/auth'
 
 const { t, locale } = useI18n()
+const authStore = useAuthStore()
+
+async function refreshWithProfile() {
+  try {
+    const res = await api.get('/auth/me')
+    authStore.user = res.data
+    localStorage.setItem('user', JSON.stringify(res.data))
+  } catch {}
+  await loadAll()
+}
 
 function localeTag() {
   return { ru: 'ru-RU', en: 'en-US', kk: 'kk-KZ' }[locale.value] || 'ru-RU'
@@ -1062,7 +1087,20 @@ onMounted(loadAll)
   border-radius: var(--radius-md); padding: 0.75rem 1.25rem;
 }
 .link-code-box code { font-size: 1.1rem; font-weight: 700; color: var(--primary-light); letter-spacing: 0.05em; flex: 1; }
-.copy-btn { background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 0; flex-shrink: 0; }
+.copy-btn {
+  background: rgba(99,102,241,0.15);
+  border: 1px solid rgba(99,102,241,0.3);
+  color: var(--primary-light);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.copy-btn:hover { background: rgba(99,102,241,0.28); }
 .link-note { font-size: 0.75rem; color: var(--text-muted); margin: 0; }
 .link-reset {
   background: none; border: none; color: var(--text-muted); font-size: 0.78rem;
@@ -1070,6 +1108,73 @@ onMounted(loadAll)
   padding: 0; align-self: flex-start;
 }
 .link-reset:hover { color: var(--text-secondary); }
+
+/* ── Onboarding TG steps ────────────────────────────────────────────────────── */
+.ob-tg-steps {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.75rem;
+  border: 1px solid rgba(42,171,238,0.15);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.ob-tg-step {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  align-items: flex-start;
+}
+.ob-tg-step:last-child { border-bottom: none; }
+.ob-tg-num {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: rgba(42,171,238,0.15); color: #2AABEE;
+  font-size: 0.75rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.ob-tg-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.ob-tg-text {
+  flex: 1;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  min-width: 200px;
+}
+.ob-tg-btn {
+  padding: 0.35rem 0.9rem;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ob-tg-gen-btn {
+  font-size: 0.82rem;
+  padding: 0.4rem 1.1rem;
+  flex-shrink: 0;
+}
+.ob-tg-code-row {
+  display: flex; align-items: center; gap: 0.75rem;
+  background: rgba(42,171,238,0.08);
+  border: 1px solid rgba(42,171,238,0.25);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 1rem;
+  flex: 1;
+}
+.ob-tg-code-row code {
+  font-size: 1rem; font-weight: 700;
+  color: #2AABEE; flex: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ob-tg-code-meta {
+  display: flex; align-items: center; gap: 1rem;
+  width: 100%;
+}
 
 /* Skeleton */
 .skeleton-card {

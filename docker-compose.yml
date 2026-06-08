@@ -1,19 +1,9 @@
 version: '3.8'
 
-services:
-  mongodb:
-    image: mongo:7
-    container_name: finlit_mongodb
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: finlit_admin
-      MONGO_INITDB_ROOT_PASSWORD: finlit_secret_2026
-      MONGO_INITDB_DATABASE: financial_literacy
-    volumes:
-      - mongodb_data:/data/db
-    restart: unless-stopped
+# MongoDB removed — using MongoDB Atlas (cloud)
+# Set MONGODB_URI in .env to your Atlas connection string
 
+services:
   redis:
     image: redis:7-alpine
     container_name: finlit_redis
@@ -25,5 +15,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  mongodb_data:
   redis_data:
